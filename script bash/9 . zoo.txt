@@ -1,0 +1,65 @@
+
+Quando la Sicurezza Va in Vacanza
+Frank scopre per caso la possibilità di eseguire comandi privilegiati dal suo utente. Ma Frank è 
+consapevole di non essere un Comandante e quindi di non avere accesso amministrativo al server di 
+Los Alamos. Segnala immediatamente il problema ad Oppenheimer. Purtroppo, Oppenheimer è a Oak Ridge 
+e non riesce a intervenire prima che uno zoo abbia invaso il sistema.
+Per evitare ulteriori problemi, incarica te di sistemare il problema e limitare l'accesso
+ amministrativo solo agli utenti che sono nel gruppo comandanti.
+
+
+
+
+
+#!/bin/bash
+
+# Configurazione
+ADMIN_GROUP="comandanti"
+SUDOERS_FILE="/etc/sudoers"
+SUDOERS_DIR="/etc/sudoers.d"
+
+# 1. Creare il gruppo 'comandanti' se non esiste
+if ! grep -q "^$ADMIN_GROUP:" /etc/group; then
+    echo "Il gruppo $ADMIN_GROUP non esiste. Creazione in corso..."
+    groupadd $ADMIN_GROUP
+    echo "Gruppo $ADMIN_GROUP creato con successo."
+else
+    echo "Il gruppo $ADMIN_GROUP esiste già."
+fi
+
+# 2. Assicurarsi che solo il gruppo 'comandanti' abbia privilegi sudo
+echo "Limitando i privilegi sudo al gruppo $ADMIN_GROUP..."
+
+# Rimuovere tutti gli utenti da sudoers non appartenenti al gruppo $ADMIN_GROUP
+if [ -d "$SUDOERS_DIR" ]; then
+    echo "Rimuovendo configurazioni personalizzate non necessarie da $SUDOERS_DIR..."
+    find $SUDOERS_DIR -type f -exec rm -f {} \;
+    echo "File personalizzati in $SUDOERS_DIR rimossi."
+fi
+
+# Sovrascrivere /etc/sudoers con configurazioni sicure
+cat <<EOF > $SUDOERS_FILE
+Defaults    env_reset
+Defaults    mail_badpass
+Defaults    secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+# Permettere il sudo solo al gruppo $ADMIN_GROUP
+%$ADMIN_GROUP ALL=(ALL) ALL
+
+# Impedire l'accesso non autorizzato
+root ALL=(ALL) ALL
+EOF
+
+chmod 440 $SUDOERS_FILE
+echo "File $SUDOERS_FILE aggiornato con successo."
+
+# 3. Verificare gli utenti con accesso amministrativo e rimuoverli se non appartengono al gruppo
+echo "Rimuovendo utenti non autorizzati dal gruppo sudo..."
+for user in $(getent group sudo | cut -d: -f4 | tr ',' ' '); do
+    if ! groups $user | grep -q "\b$ADMIN_GROUP\b"; then
+        deluser $user sudo
+        echo "Utente $user rimosso dal gruppo sudo."
+    fi
+done
+
+echo "Operazione completata. Solo gli utenti nel gruppo '$ADMIN_GROUP' hanno accesso amministrativo."

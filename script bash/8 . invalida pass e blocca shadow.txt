@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# Configurazione
+AUTH_FILE="/etc/shadow"
+BACKUP_DIR="/root/auth_file_backup"
+TODAY=$(date +%Y%m%d)
+
+# 1. Invalidare le password di tutti gli utenti
+echo "Invalidando le password di tutti gli utenti..."
+
+for user in $(cut -d: -f1 /etc/passwd); do
+    if id "$user" &>/dev/null && [ "$user" != "root" ]; then
+        passwd --expire $user 2>/dev/null
+        echo "Password di $user invalidata."
+    fi
+done
+
+echo "Tutte le password sono state invalidate. Gli utenti saranno obbligati a cambiarle al prossimo login."
+
+# 2. Proteggere il file di autenticazione
+echo "Proteggendo il file di autenticazione $AUTH_FILE..."
+
+# Creare una copia di backup del file, se non già esistente
+if [ ! -d "$BACKUP_DIR" ]; then
+    mkdir -p $BACKUP_DIR
+    echo "Cartella di backup creata in $BACKUP_DIR."
+fi
+
+if [ -f "$AUTH_FILE" ]; then
+    cp $AUTH_FILE $BACKUP_DIR/shadow_$TODAY
+    echo "Backup del file di autenticazione salvato in $BACKUP_DIR/shadow_$TODAY."
+
+    # Rimuovere permessi di lettura, scrittura ed esecuzione per tutti tranne root
+    chmod 600 $AUTH_FILE
+    chown root:root $AUTH_FILE
+    echo "Permessi del file $AUTH_FILE aggiornati. Accesso limitato a root."
+else
+    echo "Il file $AUTH_FILE non esiste o non è accessibile."
+fi
+
+# 3. Impostare un audit per monitorare il file
+echo "Impostando un audit per monitorare $AUTH_FILE..."
+auditctl -w $AUTH_FILE -p rwxa -k shadow_access
+
+echo "Operazione completata con successo!"

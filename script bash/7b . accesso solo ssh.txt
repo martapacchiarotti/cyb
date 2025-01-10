@@ -1,0 +1,55 @@
+
+Un Posto a Sedere, Feynman Resta in Piedi!
+In una riunione improvvisata nel laboratorio informatico di Los Alamos, Oppenheimer, circondato 
+da schermi lampeggianti e cavi di rete, decide di introdurre una nuova politica. Con un sorriso 
+malizioso, Maverick chiede a te, il suo aiutante preferito, di programmare una patch che obbliga 
+ogni utente della piattaforma ad accedere via SSH tramite chiavi asimmetriche. Inoltre, per fare uno 
+scherzo al suo caro amico Feynman, ti chiede di impedirgli di accedere via SSH al server,
+ obbligandolo a venire a Los Alamos. Oppenheimer ti chiede però, visto che è poco pratico con i 
+computer di permettere soltanto a lui di mantenere l'accesso con password.
+
+
+#!/bin/bash
+
+# Configurazioni
+SSHD_CONFIG="/etc/ssh/sshd_config"
+OPPENHEIMER_USER="oppenheimer"
+FEYNMAN_USER="feynman"
+ALLOWED_USERS="$OPPENHEIMER_USER"
+
+# 1. Creazione della chiave SSH (se non esiste)
+echo "[1] Controllo delle chiavi SSH..."
+if [ ! -d "/home/$OPPENHEIMER_USER/.ssh" ]; then
+    echo "La directory .ssh non esiste per l'utente $OPPENHEIMER_USER. Creazione..."
+    mkdir -m 700 /home/$OPPENHEIMER_USER/.ssh
+    echo "Generazione della chiave SSH per l'utente $OPPENHEIMER_USER..."
+    ssh-keygen -t rsa -b 2048 -f /home/$OPPENHEIMER_USER/.ssh/id_rsa -N ""
+    chown -R $OPPENHEIMER_USER:$OPPENHEIMER_USER /home/$OPPENHEIMER_USER/.ssh
+    echo "Chiave SSH generata per $OPPENHEIMER_USER."
+else
+    echo "La directory .ssh esiste già per l'utente $OPPENHEIMER_USER."
+fi
+
+# 2. Configurazione SSH per l'accesso tramite chiave e disabilitazione della password per gli altri utenti
+echo "[2] Configurazione di SSH per l'autenticazione con chiave..."
+sed -i 's/^PasswordAuthentication yes/PasswordAuthentication no/' $SSHD_CONFIG
+sed -i 's/^#PasswordAuthentication no/PasswordAuthentication no/' $SSHD_CONFIG
+echo "Accesso tramite password disabilitato per tutti gli utenti."
+
+# 3. Permettere l'accesso con password solo a Oppenheimer
+echo "[3] Permettere l'accesso con password solo per Oppenheimer..."
+echo "Match User $OPPENHEIMER_USER" >> $SSHD_CONFIG
+echo "    PasswordAuthentication yes" >> $SSHD_CONFIG
+echo "Accesso con password permesso solo per l'utente $OPPENHEIMER_USER."
+
+# 4. Impedire l'accesso SSH per Feynman
+echo "[4] Impedire l'accesso SSH per Feynman..."
+echo "DenyUsers $FEYNMAN_USER" >> $SSHD_CONFIG
+echo "Accesso SSH impedito per l'utente $FEYNMAN_USER."
+
+# 5. Riavviare il servizio SSH per applicare le modifiche
+echo "[5] Riavviando il servizio SSH per applicare le modifiche..."
+systemctl restart sshd
+echo "Configurazioni applicate con successo."
+
+echo "=== Operazione completata con successo! ==="

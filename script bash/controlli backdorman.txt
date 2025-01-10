@@ -1,0 +1,163 @@
+Se vuoi eseguire manualmente i controlli implementati nello script Bash, ecco una guida dettagliata con i comandi corrispondenti:
+
+---
+
+### **1. Controllo dei file con permessi SUID**
+I file con il bit SUID impostato possono essere eseguiti con i permessi del proprietario, rappresentando un rischio se non configurati correttamente.
+
+#### Comando:
+```bash
+find / -perm -4000 -type f 2>/dev/null
+```
+
+- Questo comando cerca i file con il bit SUID impostato (`-4000`) nel file system.
+- L'opzione `-type f` limita la ricerca ai file normali.
+- `2>/dev/null` nasconde i messaggi di errore (es. permessi negati).
+
+#### Verifica manuale:
+Per ciascun file trovato, controlla il proprietario con:
+```bash
+ls -l /percorso/del/file
+```
+
+Se il proprietario non è `root`, prendi nota e valuta se il file è legittimo o potenzialmente pericoloso.
+
+---
+
+### **2. Controllo delle modifiche nel `PATH`**
+Un `PATH` male configurato può introdurre vulnerabilità, ad esempio se include directory non valide o percorsi sospetti (es. con `.` che indica la directory corrente).
+
+#### Comando:
+```bash
+echo $PATH
+```
+
+Dividi il valore del `PATH` in singole directory:
+```bash
+IFS=':' read -r -a path_dirs <<< "$PATH"
+for dir in "${path_dirs[@]}"; do
+    if [[ ! -d "$dir" || "$dir" =~ \. ]]; then
+        echo "[!] Percorso sospetto nel PATH: $dir"
+    fi
+done
+```
+
+Oppure verifica visivamente:
+1. Copia il valore del `PATH`.
+2. Controlla ogni directory e cerca anomalie (es. directory non esistenti o contenenti `.`).
+
+---
+
+### **3. Controllo degli alias e funzioni shell**
+Alias o funzioni malevole possono alterare il comportamento di comandi comuni.
+
+#### Alias:
+```bash
+alias | grep -E '(sudo|bash|sh)'
+```
+
+- Verifica se ci sono alias sospetti che coinvolgono comandi come `sudo`, `bash` o `sh`.
+
+#### Funzioni shell:
+```bash
+declare -f | grep -E '(sudo|bash|sh)'
+```
+
+- Mostra eventuali funzioni definite che contengono riferimenti sospetti.
+
+---
+
+### **4. Controllo dei file di configurazione della shell**
+File come `~/.bashrc`, `~/.profile`, `/etc/bash.bashrc` e `/etc/profile` possono essere alterati per eseguire comandi non autorizzati.
+
+#### Comando:
+```bash
+config_files=("$HOME/.bashrc" "$HOME/.profile" "/etc/bash.bashrc" "/etc/profile")
+for file in "${config_files[@]}"; do
+    if [[ -f "$file" ]]; then
+        echo "Analizzando $file..."
+        grep -E '(sudo|bash|sh|/bin)' "$file"
+    fi
+done
+```
+
+Oppure verifica manualmente con:
+```bash
+cat /percorso/del/file | grep -E '(sudo|bash|sh|/bin)'
+```
+
+Cerca righe sospette che eseguono comandi non desiderati.
+
+---
+
+### **5. Controllo dei crontab**
+I file `crontab` possono essere usati per programmare attività automatizzate, incluso l'esecuzione di comandi malevoli.
+
+#### Comandi:
+1. Per il crontab dell'utente corrente:
+   ```bash
+   crontab -l
+   ```
+   Cerca riferimenti a `sudo`, `bash`, `sh` o `/bin`:
+   ```bash
+   crontab -l | grep -E '(sudo|bash|sh|/bin)'
+   ```
+
+2. Per crontab di sistema:
+   ```bash
+   ls /etc/cron.* /var/spool/cron/crontabs 2>/dev/null | xargs -I{} grep -E '(sudo|bash|sh|/bin)' {} 2>/dev/null
+   ```
+
+---
+
+### **6. Controllo dei processi sospetti**
+Cerca processi in esecuzione che potrebbero rappresentare una minaccia.
+
+#### Comando:
+```bash
+ps aux | grep -v grep | grep -E '(sudo|bash|sh)'
+```
+
+Verifica manualmente i processi elencati e identifica eventuali comportamenti sospetti (es. script non riconosciuti).
+
+---
+
+### **Riassunto Comandi Manuali**
+Per eseguire tutti i controlli manualmente:
+
+1. File SUID:
+   ```bash
+   find / -perm -4000 -type f 2>/dev/null
+   ```
+
+2. Modifiche nel `PATH`:
+   ```bash
+   echo $PATH
+   ```
+
+3. Alias:
+   ```bash
+   alias | grep -E '(sudo|bash|sh)'
+   ```
+
+4. Funzioni shell:
+   ```bash
+   declare -f | grep -E '(sudo|bash|sh)'
+   ```
+
+5. File di configurazione:
+   ```bash
+   grep -E '(sudo|bash|sh|/bin)' /percorso/del/file
+   ```
+
+6. Crontab:
+   ```bash
+   crontab -l | grep -E '(sudo|bash|sh|/bin)'
+   ```
+
+7. Processi:
+   ```bash
+   ps aux | grep -v grep | grep -E '(sudo|bash|sh)'
+   ```
+
+Se trovi qualcosa di sospetto, analizzalo attentamente prima di agire. 😊

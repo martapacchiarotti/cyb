@@ -1,0 +1,53 @@
+Un Posto a Sedere, Lorenzo Resta in Piedi!
+In una riunione improvvisata nel laboratorio informatico di Top Gun, il Capitano Maverick,
+circondato da schermi lampeggianti e cavi di rete, decide di introdurre una politica per
+scoraggiare eventuali intrusi informatici. Con un sorriso malizioso, Maverick chiede a te, il suo
+aiutante preferito, di programmare una patch che limita ogni utente della piattaforma ad un
+solo accesso concorrente. Inoltre, per fare uno scherzo al suo caro amico Lorenzo, ti chiede di
+impedirgli di accedere via SSH al server, obbligandolo a venire all'Accademia.
+
+
+
+#!/bin/bash
+
+# Configurazione
+SSH_CONFIG="/etc/ssh/sshd_config"
+LIMIT_FILE="/etc/security/limits.conf"
+DENY_FILE="/etc/ssh/sshd_config.d/deny_users.conf"
+
+# 1. Limitare ogni utente a un solo accesso concorrente
+echo "Configurando il limite di accesso per utente a 1 sessione concorrente..."
+
+if ! grep -q pam_limits.so /etc/pam.d/sshd; then
+    echo "session required pam_limits.so" >> /etc/pam.d/sshd
+    echo "Modulo PAM per limitare gli accessi configurato."
+fi
+
+if ! grep -q "\* hard maxlogins 1" $LIMIT_FILE; then
+    echo "* hard maxlogins 1" >> $LIMIT_FILE
+    echo "Limite di accessi concorrenti impostato a 1."
+fi
+
+# 2. Bloccare l'utente Lorenzo dall'accesso SSH
+echo "Bloccare l'accesso SSH per l'utente Lorenzo..."
+
+if [ ! -f $DENY_FILE ]; then
+    touch $DENY_FILE
+fi
+
+if ! grep -q "DenyUsers Lorenzo" $DENY_FILE; then
+    echo "DenyUsers Lorenzo" >> $DENY_FILE
+    echo "Accesso SSH per Lorenzo bloccato."
+fi
+
+# Assicurarsi che il file deny_users.conf venga incluso in sshd_config
+if ! grep -q "Include $DENY_FILE" $SSH_CONFIG; then
+    echo "Include $DENY_FILE" >> $SSH_CONFIG
+    echo "Inclusione del file di configurazione aggiuntiva completata."
+fi
+
+# Riavviare il servizio SSH per applicare le modifiche
+echo "Riavviando il servizio SSH..."
+systemctl restart sshd
+
+echo "Configurazione completata!"

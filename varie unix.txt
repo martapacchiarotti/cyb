@@ -1,0 +1,5 @@
+ip link show  #per le interfacce
+
+ifconfig -a  #interfacce atteve e disattive
+
+sh script.sh  #esegue in un nuova shell

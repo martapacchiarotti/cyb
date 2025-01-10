@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# This sets a superuser root with password ciao
+password=ciao
+hash=$(echo -e "$password\n$password" | grub-mkpasswd-pbkdf2 | awk '/grub/ {print $NF}')
+cat << EOF >> /etc/grub.d/40_custom
+
+set superusers='root'
+password_pbkdf2 root $hash
+EOF
+
+# This makes the boot entry unrestricted
+# So that the password is only needed for changing it
+# And not for booting the system
+sed -i '0,/^CLASS="/ {//s/"$/ --unrestricted"/}' /etc/grub.d/10_linux
+
+# This applies the changes
+sudo update-grub

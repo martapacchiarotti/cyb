@@ -1,0 +1,59 @@
+
+Operazione Manhattan... ma con i permessi!
+Oppenheimer vorrebbe poter vedere gli esiti della ricerca di tutti i suoi collaboratori.
+ Per questo configura una cartella chiamata "ricerca" dentro la root del server. 
+Questa cartella dovrà essere scrivibile da tutti i membri del gruppo scienziati e da Oppenheimer 
+stesso.
+
+
+#!/bin/bash
+
+# Configurazione
+RICERCA_DIR="/ricerca"
+GRUPPO_SCIENZIATI="scienziati"
+UTENTE_OPPENHEIMER="oppenheimer"
+
+# 1. Creare il gruppo "scienziati" se non esiste
+if ! grep -q "^$GRUPPO_SCIENZIATI:" /etc/group; then
+    echo "Il gruppo $GRUPPO_SCIENZIATI non esiste. Creazione in corso..."
+    groupadd $GRUPPO_SCIENZIATI
+    echo "Gruppo $GRUPPO_SCIENZIATI creato con successo."
+else
+    echo "Il gruppo $GRUPPO_SCIENZIATI esiste già."
+fi
+
+# 2. Creare l'utente "oppenheimer" se non esiste
+if ! id "$UTENTE_OPPENHEIMER" &>/dev/null; then
+    echo "L'utente $UTENTE_OPPENHEIMER non esiste. Creazione in corso..."
+    useradd -m -G $GRUPPO_SCIENZIATI $UTENTE_OPPENHEIMER
+    echo "Utente $UTENTE_OPPENHEIMER creato e aggiunto al gruppo $GRUPPO_SCIENZIATI."
+else
+    echo "L'utente $UTENTE_OPPENHEIMER esiste già."
+fi
+
+# 3. Creare la cartella "/ricerca" se non esiste
+if [ ! -d "$RICERCA_DIR" ]; then
+    echo "La cartella $RICERCA_DIR non esiste. Creazione in corso..."
+    mkdir $RICERCA_DIR
+    echo "Cartella $RICERCA_DIR creata con successo."
+fi
+
+# 4. Configurare permessi sulla cartella
+echo "Configurando i permessi sulla cartella $RICERCA_DIR..."
+
+# Cambiare il proprietario della cartella a "oppenheimer" e al gruppo "scienziati"
+chown oppenheimer:scienziati $RICERCA_DIR
+
+# Impostare permessi per lettura, scrittura ed esecuzione al proprietario e al gruppo
+chmod 770 $RICERCA_DIR
+
+# Assicurarsi che i file creati nella cartella ereditino il gruppo "scienziati"
+chmod g+s $RICERCA_DIR
+
+echo "Permessi configurati. La cartella $RICERCA_DIR è ora scrivibile da oppenheimer e dal gruppo scienziati."
+
+# 5. Aggiungere eventuali collaboratori al gruppo "scienziati"
+echo "Aggiungere collaboratori al gruppo $GRUPPO_SCIENZIATI utilizzando il comando:"
+echo "    usermod -aG $GRUPPO_SCIENZIATI nomeutente"
+
+echo "Operazione completata con successo!"

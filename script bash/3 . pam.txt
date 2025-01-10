@@ -1,0 +1,10 @@
+#!/bin/bash
+
+sudo cp /etc/pam.d/common-password /etc/pam.d/common-password.bak
+
+#se voglio sostituire il parametro
+sudo sed -i's/retry=3/retry=5/' /etc/pam.d/common-password
+
+sudo sed -i '/pam_pwquality.so/ s/$/minlen=8 ucredit=-1 lcredit=-1 dcredit=-1 ocredit=-1/' /etc/pam.d/common-password
+
+

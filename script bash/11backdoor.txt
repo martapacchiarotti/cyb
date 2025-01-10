@@ -1,0 +1,166 @@
+Bash si Trasforma in Superuser
+Nella penombra dei laboratori informatici dell'accademia Top Gun, il Capitano Maverick si
+trova di fronte a una nuova, inquietante sfida. Un lestofante, con abilità da hacker, ha inserito
+una backdoor nel sistema, una minaccia nascosta che potrebbe consentirgli di ottenere
+privilegi amministrativi senza l'ausilio del comando sudo, bypassando tutte le misure di
+sicurezza precedentemente stabilite.
+Maverick scopre che, indipendentemente dall'account che il lestofante utilizzi per infiltrarsi nel
+sistema, riesce sempre a eseguire comandi con i privilegi da amministratore.
+Una volta identificata la backdoor, Maverick non elimina la minaccia e lascia te, senza ulteriori
+indizi, a scoprire la vulnerabilità.
+
+
+############################################
+verifica backdoor
+
+#!/bin/bash
+
+# Verifica dei file con permessi SUID
+echo "=== Controllo dei file con SUID ==="
+find / -perm -4000 -type f 2>/dev/null | while read file; do
+    owner=$(ls -l "$file" | awk '{print $3}')
+    if [[ "$owner" != "root" ]]; then
+        echo "[!] File con SUID non root trovato: $file"
+    fi
+done
+
+# Controllo delle modifiche nel PATH
+echo "=== Controllo delle modifiche nel PATH ==="
+echo "Percorso corrente: $PATH"
+IFS=':' read -r -a path_dirs <<< "$PATH"
+for dir in "${path_dirs[@]}"; do
+    if [[ ! -d "$dir" || "$dir" =~ \. ]]; then
+        echo "[!] Percorso sospetto nel PATH: $dir"
+    fi
+done
+
+# Controllo degli alias e funzioni shell
+echo "=== Controllo degli alias e funzioni ==="
+alias | grep -E '(sudo|bash|sh)'
+declare -f | grep -E '(sudo|bash|sh)'
+
+# Controllo nei file di configurazione della shell
+echo "=== Controllo file di configurazione della shell ==="
+config_files=("$HOME/.bashrc" "$HOME/.profile" "/etc/bash.bashrc" "/etc/profile")
+for file in "${config_files[@]}"; do
+    if [[ -f "$file" ]]; then
+        echo "Analizzando $file..."
+        grep -E '(sudo|bash|sh|/bin)' "$file"
+    fi
+done
+
+# Verifica dei crontab
+echo "=== Controllo dei crontab ==="
+crontab -l 2>/dev/null | grep -E '(sudo|bash|sh|/bin)'
+ls /etc/cron.* /var/spool/cron/crontabs 2>/dev/null | xargs -I{} grep -E '(sudo|bash|sh|/bin)' {} 2>/dev/null
+
+# Controllo dei processi sospetti
+echo "=== Controllo dei processi sospetti ==="
+ps aux | grep -v grep | grep -E '(sudo|bash|sh)'
+
+echo "=== Scansione completata ==="
+
+
+##############################
+############################
+# soluzioni
+
+
+#!/bin/bash
+
+# Funzione per verificare i privilegi di amministratore
+check_root() {
+    if [[ $EUID -ne 0 ]]; then
+        echo "[!] Questo script deve essere eseguito come root!"
+        exit 1
+    fi
+}
+
+# Rimuove file SUID non autorizzati
+mitigate_suid_files() {
+    echo "=== Rimozione file SUID sospetti ==="
+    find / -perm -4000 -type f 2>/dev/null | while read file; do
+        owner=$(ls -l "$file" | awk '{print $3}')
+        if [[ "$owner" != "root" ]]; then
+            echo "[!] File SUID sospetto trovato: $file"
+            echo "Rimuovendo il bit SUID da $file..."
+            chmod u-s "$file"
+        fi
+    done
+}
+
+# Ripristina il PATH a un valore sicuro
+fix_path() {
+    echo "=== Ripristino del PATH ==="
+    safe_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    echo "Impostando PATH sicuro: $safe_path"
+    export PATH="$safe_path"
+    echo "PATH=$safe_path" > /etc/environment
+}
+
+# Rimuove alias e funzioni malevoli
+remove_aliases_and_functions() {
+    echo "=== Rimozione alias e funzioni sospetti ==="
+    unalias -a
+    echo "Alias rimossi."
+
+    # Funzioni shell
+    declare -f | grep -E '(sudo|bash|sh)' | awk '{print $1}' | while read func; do
+        unset -f "$func"
+        echo "Funzione rimossa: $func"
+    done
+}
+
+# Ripulisce i file di configurazione della shell
+clean_config_files() {
+    echo "=== Ripulitura file di configurazione ==="
+    config_files=("$HOME/.bashrc" "$HOME/.profile" "/etc/bash.bashrc" "/etc/profile")
+    for file in "${config_files[@]}"; do
+        if [[ -f "$file" ]]; then
+            echo "Analizzando $file..."
+            sed -i '/sudo\|bash\|sh\|\/bin/d' "$file"
+            echo "$file ripulito."
+        fi
+    done
+}
+
+# Rimuove crontab sospetti
+clean_crontab() {
+    echo "=== Rimozione crontab sospetti ==="
+    crontab -l 2>/dev/null | grep -E -v '(sudo|bash|sh|/bin)' > /tmp/new_crontab
+    crontab /tmp/new_crontab
+    rm -f /tmp/new_crontab
+    echo "Crontab utente ripulito."
+
+    cron_dirs=("/etc/cron.*" "/var/spool/cron/crontabs")
+    for dir in "${cron_dirs[@]}"; do
+        find "$dir" -type f 2>/dev/null | while read cron_file; do
+            echo "Ripulendo $cron_file..."
+            sed -i '/sudo\|bash\|sh\|\/bin/d' "$cron_file"
+        done
+    done
+}
+
+# Termina processi sospetti
+terminate_suspicious_processes() {
+    echo "=== Terminazione processi sospetti ==="
+    ps aux | grep -v grep | grep -E '(sudo|bash|sh)' | awk '{print $2}' | while read pid; do
+        echo "Terminando processo PID: $pid"
+        kill -9 "$pid" 2>/dev/null
+    done
+}
+
+# Esegue tutte le azioni di mitigazione
+main() {
+    check_root
+    mitigate_suid_files
+    fix_path
+    remove_aliases_and_functions
+    clean_config_files
+    clean_crontab
+    terminate_suspicious_processes
+    echo "=== Mitigazione completata! ==="
+}
+
+main
+

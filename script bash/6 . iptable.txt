@@ -1,0 +1,55 @@
+l Buttafuori Virtuale
+Ice informa Maverick che dal comando centrale non riescono più a raggiungere il server web
+della TopGun.
+Maverick approfitta dell'occasione e decide di riconfigurare totalmente il firewall, andando a
+risolvere il problema e permettendo l'accesso al server solo via SSH o tramite il sito web (port
+80 TCP). Già che c'è, provvede anche a bloccare l'accesso al sito web della TopGun a un
+famoso prefisso di hacker, 193.204.161.0/24.
+Aiuta Maverick realizzando lo script che compie queste azioni.
+
+
+
+#!/bin/bash
+
+
+# Pulizia delle regole esistenti
+iptables -F
+
+# Imposta le politiche predefinite
+iptables -P INPUT DROP
+iptables -P FORWARD ACCEPT
+iptables -P OUTPUT ACCEPT
+
+# Permetti connessioni esistenti e relative (prima di tutto!)
+iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+# Permetti loopback (localhost)
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A OUTPUT -o lo -j ACCEPT
+
+
+# Permetti connessioni SSH (porta 22 TCP)
+
+#chiunque in ingresso
+iptables -A INPUT -p tcp --dport 22 -j ACCEPT  
+#blocca ip sorgente -s
+iptables -A INPUT -s 193.204.161.0/24 -p tcp --dport 80 -j DROP
+#abilita solo ip sorgente
+iptables -A INPUT -s 192.168.122.1/32 -p tcp -m tcp --dport 22 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+
+
+
+
+
+
+# Permetti connessioni HTTP (porta 80 TCP)
+iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+iptables -A OUTPUT -p tcp --dport 80 -j ACCEPT
+# Blocca il prefisso IP 193.204.161.0/24 per il sito web (porta 80 TCP)
+iptables -A INPUT -s 193.204.161.0/24 -p tcp --dport 80 -j DROP
+
+
+# Salva le regole (adatta il percorso alla tua distribuzione)
+iptables-save > /etc/iptables/rules.v4
+
+echo "Firewall configurato correttamente!"

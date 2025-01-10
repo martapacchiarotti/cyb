@@ -1,0 +1,43 @@
+#!/bin/bash
+
+########################################
+# creare utente cystest
+
+
+# Verifica se l'utente cystest esiste
+if id "cystest" &>/dev/null; then
+    echo "L'utente cystest esiste."
+else
+    echo "L'utente cystest non esiste. Creandolo..."
+    sudo useradd -m cystest
+    # Aggiungi l'utente al gruppo cystest, se necessario
+    sudo usermod -aG cystest cystest
+    echo "Utente cystest creato con successo."
+fi
+
+
+
+
+# Verifica se /etc/sudoers.d/ esiste, se no lo crea
+if [ ! -d "/etc/sudoers.d" ]; then
+    echo "La directory /etc/sudoers.d non esiste. Creandola..."
+    mkdir -p /etc/sudoers.d
+    # Impostazione permessi corretti per la directory
+    chmod 755 /etc/sudoers.d
+fi
+
+# Creazione del file di configurazione per cystest
+SUDOERS_FILE="/etc/sudoers.d/cystest"   #salva nel file della directory sudoers dell'utente cystest
+
+# Scrittura delle regole nel file
+echo "cystest ALL= /usr/bin/nmap" > "$SUDOERS_FILE"
+
+# Impostazione dei permessi corretti per il file sudoers
+chmod 440 "$SUDOERS_FILE"
+
+echo "File sudoers per cystest creato con successo."
+
+####################################
+##se non voglio esegua opzioni
+# Scrittura delle regole nel file
+echo "cystest ALL = /usr/bin/nmap, !/usr/bin/nmap -p > "$SUDOERS_FILE"

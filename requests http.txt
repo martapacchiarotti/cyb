@@ -1,0 +1,14 @@
+#invia a pagina di ritornare la risposta del server indicando
+# anche il parametro flag
+
+
+
+pip install requests
+
+import requests rq
+
+response=rq.get("http://web-01.challs.olicyber.it/")
+
+
+payload={id : flag}
+response=rq.get("http://web-01.challs.olicyber.it/get", param=payload)
