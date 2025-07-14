@@ -1,3 +1,13 @@
+#Invasione Pacifista
+#Maverick scopre che un file, usato per l'autenticazione, è stato trafugato da un utente
+#malizioso, pur non avendo diritti amministrativi. Capendo il rischio che ciò comporta, agisce
+#rapidamente eseguendo due azioni:
+#    • invalida le password di tutti gli utenti (obbligandoli a cambiare password al successivo
+#login) e,
+#     • impedisce che il file possa trafugato ulteriormente
+
+
+
 #!/bin/bash
 
 # Configurazione

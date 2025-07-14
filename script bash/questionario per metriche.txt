@@ -1,0 +1,175 @@
+import React, { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+
+const questions = [
+  {
+    id: "ageRange",
+    label: "Fascia di età",
+    type: "select",
+    options: [
+      "<18",
+      "18-22",
+      "23-26",
+      ">26",
+    ],
+  },
+  {
+    id: "education",
+    label: "Tipo di percorso di studi",
+    type: "select",
+    options: [
+      "Scuola superiore",
+      "Università triennale",
+      "Università magistrale",
+      "Master / altro",
+    ],
+  },
+  {
+    id: "goal",
+    label: "Per cosa vuoi migliorare la tua comunicazione?",
+    type: "checkbox",
+    options: [
+      "Esami orali",
+      "Presentazioni in aula",
+      "Colloqui di lavoro",
+      "Video presentazioni o progetti",
+      "Parlare in pubblico in generale",
+    ],
+  },
+  {
+    id: "confidence",
+    label: "Come ti senti quando devi parlare davanti a qualcuno?",
+    type: "slider",
+    min: 1,
+    max: 5,
+  },
+  {
+    id: "preparedness",
+    label: "Quanto ti senti preparato a strutturare un discorso efficace?",
+    type: "slider",
+    min: 1,
+    max: 5,
+  },
+  {
+    id: "movements",
+    label: "Quanto ti senti padrone dei movimenti mentre discorri?",
+    type: "slider",
+    min: 1,
+    max: 5,
+  },
+    {
+    id: "anxiety",
+    label: "Quanto ti senti ansioso prima di parlare in pubblico?",
+    type: "slider",
+    min: 1,
+    max: 5,
+  },
+  {
+    id: "focus",
+    label: "Dove pensi di avere più bisogno di aiuto?",
+    type: "checkbox",
+    options: [
+      "Voce e intonazione",
+      "Postura e linguaggio del corpo",
+      "Organizzazione del discorso",
+      "Fluidità verbale",
+      "Gestione dell’ansia",
+      "Tempo e ritmo del discorso",
+    ],
+  },
+  {
+    id: "training",
+    label: "Come preferiresti allenarti?",
+    type: "checkbox",
+    options: [
+      "Mini-esercizi quotidiani",
+      "Sessioni simulate",
+      "Feedback automatici",
+      "Suggerimenti teorici",
+    ],
+  },
+  {
+    id: "email",
+    label: "Vuoi ricevere un piano di esercizi personalizzato? Inserisci l'email",
+    type: "email",
+  },
+];
+
+export default function UserProfilingForm() {
+  const [form, setForm] = useState({});
+
+  const handleChange = (id, value) => {
+    setForm({ ...form, [id]: value });
+  };
+
+  const handleCheckboxChange = (id, option) => {
+    const prev = form[id] || [];
+    const newVal = prev.includes(option)
+      ? prev.filter((o) => o !== option)
+      : [...prev, option];
+    setForm({ ...form, [id]: newVal });
+  };
+
+  const handleSubmit = () => {
+    console.log("Profilazione utente:", form);
+    alert("Grazie! Abbiamo ricevuto le tue preferenze.");
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-4">🎯 Profilazione utente</h1>
+      <Card>
+        <CardContent className="space-y-6 py-6">
+          {questions.map((q) => (
+            <div key={q.id}>
+              <Label className="block mb-2">{q.label}</Label>
+              {q.type === "number" || q.type === "email" ? (
+                <Input
+                  type={q.type}
+                  onChange={(e) => handleChange(q.id, e.target.value)}
+                />
+              ) : q.type === "select" ? (
+                <select
+                  className="w-full p-2 border rounded"
+                  onChange={(e) => handleChange(q.id, e.target.value)}
+                >
+                  <option value="">Seleziona...</option>
+                  {q.options.map((opt) => (
+                    <option key={opt}>{opt}</option>
+                  ))}
+                </select>
+              ) : q.type === "checkbox" ? (
+                <div className="space-y-2">
+                  {q.options.map((opt) => (
+                    <div key={opt} className="flex items-center gap-2">
+                      <Checkbox
+                        checked={form[q.id]?.includes(opt) || false}
+                        onCheckedChange={() => handleCheckboxChange(q.id, opt)}
+                      />
+                      <span>{opt}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : q.type === "slider" ? (
+                <Slider
+                  defaultValue={[3]}
+                  min={q.min}
+                  max={q.max}
+                  step={1}
+                  onValueChange={(val) => handleChange(q.id, val[0])}
+                />
+              ) : null}
+            </div>
+          ))}
+          <Button onClick={handleSubmit}>Invia</Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

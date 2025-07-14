@@ -1,0 +1,81 @@
+#Invasione Pacifista
+#Maverick scopre che un file, usato per l'autenticazione, è stato trafugato da un utente
+#malizioso, pur non avendo diritti amministrativi. Capendo il rischio che ciò comporta, agisce
+#rapidamente eseguendo due azioni:
+#    • invalida le password di tutti gli utenti (obbligandoli a cambiare password al successivo
+#login) e,
+#     • impedisce che il file possa trafugato ulteriormente
+
+
+
+
+#!/bin/bash
+
+# Configurazione
+
+
+AUTH_FILE="/etc/shadow"
+BACKUP_DIR="/root/auth_file_backup"
+TODAY=$(date +%Y%m%d)
+
+#!/bin/bash
+
+# Variabili
+TODAY=$(date +%F)
+BACKUP_DIR="/root/backup_auth"
+AUTH_FILE="/etc/shadow"
+
+# 1. Invalidare le password di tutti gli utenti
+echo "Invalidando le password di tutti gli utenti..."
+
+for user in $(cut -d: -f1 /etc/passwd); do
+    if id "$user" &>/dev/null && [ "$user" != "root" ]; then
+        passwd --expire "$user" 2>/dev/null
+        echo " Password di $user invalidata."
+    fi
+done
+
+echo "Tutte le password sono state invalidate. Gli utenti dovranno cambiarle al prossimo login."
+
+# 2. Proteggere il file di autenticazione
+echo "Proteggendo il file di autenticazione $AUTH_FILE..."
+
+# Creare una cartella di backup
+if [ ! -d "$BACKUP_DIR" ]; then
+    mkdir -p "$BACKUP_DIR"
+    echo "Cartella di backup creata: $BACKUP_DIR"
+fi
+
+if [ -f "$AUTH_FILE" ]; then
+    cp "$AUTH_FILE" "$BACKUP_DIR/shadow_$TODAY"
+    echo "Backup creato: $BACKUP_DIR/shadow_$TODAY"
+
+    # Permessi sicuri
+    chmod 600 "$AUTH_FILE"
+    chown root:root "$AUTH_FILE"
+    echo "Permessi aggiornati: solo root può accedere a $AUTH_FILE"
+else
+    echo "Il file $AUTH_FILE non esiste o non è accessibile."
+fi
+
+# 3. Verifica/installazione di auditd e configurazione auditctl
+echo "Verificando auditctl..."
+
+if ! command -v auditctl &>/dev/null; then
+    echo " 'auditctl' non è installato. Tentativo di installazione..."
+    if command -v apt &>/dev/null; then
+        sudo apt update
+        sudo apt install -y auditd audispd-plugins
+        echo " 'auditctl' installato con successo."
+    else
+        echo " Impossibile installare auditctl: gestore pacchetti non riconosciuto."
+        exit 1
+    fi
+fi
+
+echo " Configurando audit su $AUTH_FILE..."
+sudo auditctl -w "$AUTH_FILE" -p rwxa -k shadow_access
+echo " Audit attivo sul file $AUTH_FILE con chiave 'shadow_access'."
+
+echo " Operazione completata con successo!"
+

@@ -70,7 +70,7 @@ class PasswordFinder:
 # Esempio di utilizzo
 if __name__ == "__main__":
     # URL del server target (modifica secondo necessità)
-    url = 'http://web-17.challs.olicyber.it'
+    url = 'http://web-17.challs.olicyber.it/blind'
     
     # Inizializza il PasswordFinder
     finder = PasswordFinder(url)

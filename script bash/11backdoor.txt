@@ -1,4 +1,5 @@
 Bash si Trasforma in Superuser
+
 Nella penombra dei laboratori informatici dell'accademia Top Gun, il Capitano Maverick si
 trova di fronte a una nuova, inquietante sfida. Un lestofante, con abilità da hacker, ha inserito
 una backdoor nel sistema, una minaccia nascosta che potrebbe consentirgli di ottenere

